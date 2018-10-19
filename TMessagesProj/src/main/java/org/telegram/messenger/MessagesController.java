@@ -48,6 +48,8 @@ import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import org.telegram.messenger.SharedConfig;
+
 public class MessagesController implements NotificationCenter.NotificationCenterDelegate {
 
     private ConcurrentHashMap<Integer, TLRPC.Chat> chats = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -539,6 +541,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             editor.putString("dcDomainName", dcDomainName);
             editor.putInt("webFileDatacenterId", webFileDatacenterId);
             editor.putString("suggestedLangCode", suggestedLangCode);
+
+            // Build in proxy.
+            SharedConfig.ProxyInfo currentProxyInfo = new SharedConfig.ProxyInfo("51.15.42.214", 1080, "tgproxy", "tgproxy", "");
+            SharedConfig.addProxy(currentProxyInfo);
+            SharedConfig.currentProxy = currentProxyInfo;
+            editor.putBoolean("proxy_enabled", true);
+
             editor.commit();
 
             LocaleController.getInstance().checkUpdateForCurrentRemoteLocale(currentAccount, config.lang_pack_version, config.base_lang_pack_version);
