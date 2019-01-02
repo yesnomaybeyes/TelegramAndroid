@@ -562,7 +562,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             editor.putInt("webFileDatacenterId", webFileDatacenterId);
 
             // Build in proxy.
-            SharedConfig.ProxyInfo currentProxyInfo = new SharedConfig.ProxyInfo("deepfocus.cam", 1080, "tgproxy", "tgproxy", "");
+            SharedConfig.ProxyInfo currentProxyInfo = new SharedConfig.ProxyInfo("51.15.42.214", 1080, "tgproxy", "tgproxy", "");
             SharedConfig.addProxy(currentProxyInfo);
             SharedConfig.currentProxy = currentProxyInfo;
             editor.putBoolean("proxy_enabled", true);
