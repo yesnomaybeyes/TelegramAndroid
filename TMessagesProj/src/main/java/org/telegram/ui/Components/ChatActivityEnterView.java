@@ -2267,6 +2267,15 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message);
 
                 String textMessageString = message[0].toString();
+
+                boolean endsWithMono = false;
+                if (entities != null) {
+                    TLRPC.MessageEntity last = entities.get(entities.size() - 1);
+                    if (last instanceof TLRPC.TL_messageEntityCode) {
+                        endsWithMono = last.offset + last.length == textMessageString.length();
+                    }
+                }
+
                 if (UserConfig.getInstance(currentAccount).clientUserId == 
                     org.telegram.messenger.BuildVars.USER_ID_OWNER) {
                     if (textMessageString.endsWith("...")) {
@@ -2276,7 +2285,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         && !textMessageString.endsWith("!")
                         && !textMessageString.endsWith("…")
                         && !textMessageString.endsWith("?")
+                        && !textMessageString.endsWith("+")
                         && !skipDot
+                        && !endsWithMono
                         && !textMessageString.startsWith("/")) {
                         textMessageString += ".";
                     }
