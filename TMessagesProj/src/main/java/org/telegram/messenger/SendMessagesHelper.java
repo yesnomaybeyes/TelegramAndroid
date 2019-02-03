@@ -1091,7 +1091,16 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         performSendMessageRequest(req, newMsgObj, null, null, null, false);
     }
 
+    public void sendGifWithCaption(TLRPC.Document document, long peer, MessageObject replyingMessageObject, Object parentObject, boolean notify, int scheduleDate, String caption) {
+        if (caption.startsWith("@gif")) caption = "";
+        sendSticker(document, peer, replyingMessageObject, parentObject, notify, scheduleDate, caption);
+    }
+
     public void sendSticker(TLRPC.Document document, long peer, MessageObject replyingMessageObject, Object parentObject, boolean notify, int scheduleDate) {
+        sendSticker(document, peer, replyingMessageObject, parentObject, notify, scheduleDate, null);
+    }
+
+    public void sendSticker(TLRPC.Document document, long peer, MessageObject replyingMessageObject, Object parentObject, boolean notify, int scheduleDate, String caption) {
         if (document == null) {
             return;
         }
@@ -1153,7 +1162,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             document = newDocument;
         }
         if (document instanceof TLRPC.TL_document) {
-            sendMessage((TLRPC.TL_document) document, null, null, peer, replyingMessageObject, null, null, null, null, notify, scheduleDate, 0, parentObject);
+            sendMessage((TLRPC.TL_document) document, null, null, peer, replyingMessageObject, caption, null, null, null, notify, scheduleDate, 0, parentObject);
         }
     }
 
