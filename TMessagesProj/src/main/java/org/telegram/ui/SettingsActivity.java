@@ -154,6 +154,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int versionRow;
     private int rowCount;
 
+    private int forkRow;
+
     private final static int edit_name = 1;
     private final static int logout = 2;
 
@@ -227,6 +229,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         privacyRow = rowCount++;
         dataRow = rowCount++;
         chatRow = rowCount++;
+        forkRow = rowCount++;
         languageRow = rowCount++;
         helpRow = rowCount++;
         versionRow = rowCount++;
@@ -357,6 +360,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
                 presentFragment(new ChatSettingsActivity());
+            } else if (position == forkRow) {
+                presentFragment(new ForkSettingsActivity());
             } else if (position == helpRow) {
                 BottomSheet.Builder builder = new BottomSheet.Builder(context);
                 builder.setApplyTopPadding(false);
@@ -1215,6 +1220,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndIcon(LocaleController.getString("DataSettings", R.string.DataSettings), R.drawable.menu_data, true);
                     } else if (position == chatRow) {
                         textCell.setTextAndIcon(LocaleController.getString("ChatSettings", R.string.ChatSettings), R.drawable.menu_chats, true);
+                    } else if (position == forkRow) {
+                        textCell.setTextAndIcon("Fork Settings", R.drawable.menu_chats, true);
                     } else if (position == helpRow) {
                         textCell.setTextAndIcon(LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, false);
                     }
@@ -1269,7 +1276,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return position == notificationRow || position == numberRow || position == privacyRow ||
                     position == languageRow || position == usernameRow || position == bioRow ||
                     position == versionRow || position == dataRow || position == chatRow ||
-                    position == helpRow;
+                    position == helpRow || position == forkRow;
         }
 
         @Override
@@ -1346,7 +1353,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (position == settingsSectionRow) {
                 return 1;
             } else if (position == notificationRow || position == privacyRow || position == languageRow ||
-                    position == dataRow || position == chatRow || position == helpRow) {
+                    position == dataRow || position == chatRow || position == helpRow || position == forkRow) {
                 return 2;
             } else if (position == versionRow) {
                 return 5;
