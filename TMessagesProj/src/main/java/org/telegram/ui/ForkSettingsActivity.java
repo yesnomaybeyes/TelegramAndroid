@@ -57,6 +57,8 @@ public class ForkSettingsActivity extends BaseFragment {
     private int syncPinsRow;
     private int pinOrderRow;
 
+    private int emptyRow;
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
@@ -69,6 +71,7 @@ public class ForkSettingsActivity extends BaseFragment {
         photoHasStickerRow = rowCount++;
         unmutedOnTopRow = rowCount++;
 
+        emptyRow = rowCount++;
         sectionRow2 = rowCount++;
         syncPinsRow = rowCount++;
         pinOrderRow = rowCount++;
@@ -272,7 +275,7 @@ public class ForkSettingsActivity extends BaseFragment {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == -2) {
+            if (position == emptyRow) {
                 return 1;
             } else if (position == pinOrderRow) {
                 return 2;
