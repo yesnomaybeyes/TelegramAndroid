@@ -47,6 +47,7 @@ public class ForkSettingsActivity extends BaseFragment {
 
     private int rowCount;
     private int sectionRow1;
+    private int sectionRow2;
 
     private int squareAvatarsRow;
     private int inappCameraRow;
@@ -65,6 +66,7 @@ public class ForkSettingsActivity extends BaseFragment {
         inappCameraRow = rowCount++;
         photoHasStickerRow = rowCount++;
 
+        sectionRow2 = rowCount++;
         pinOrderRow = rowCount++;
 
         return true;
@@ -187,6 +189,8 @@ public class ForkSettingsActivity extends BaseFragment {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == sectionRow1) {
                         headerCell.setText(LocaleController.getString("General", R.string.General));
+                    } else if (position == sectionRow2) {
+                        headerCell.setText(LocaleController.getString("PinSection", R.string.PinSection));
                     }
                     break;
                 }
@@ -239,14 +243,14 @@ public class ForkSettingsActivity extends BaseFragment {
         public int getItemViewType(int position) {
             if (position == -2) {
                 return 1;
-            } else if (0 == 1) {
+            } else if (position == pinOrderRow) {
                 return 2;
             } else if (position == squareAvatarsRow 
                 || position == inappCameraRow 
-                || position == photoHasStickerRow 
-                || position == pinOrderRow) {
+                || position == photoHasStickerRow) {
                 return 3;
-            } else if (position == sectionRow1) {
+            } else if (position == sectionRow1
+                || position == sectionRow2) {
                 return 4;
             }
             return 6;

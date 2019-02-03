@@ -31,5 +31,6 @@
     <string name="PhotoHasSticker">Отправлять инфо о стикере в фото</string>
     <string name="PhotoHasStickerInfo">При использовании стикеров на фотографии</string>
     <string name="PinDialogsOrder">Порядок закреп. диалогов</string>
+    <string name="PinSection">Закреплённые диалоги</string>
     
 </resources>
