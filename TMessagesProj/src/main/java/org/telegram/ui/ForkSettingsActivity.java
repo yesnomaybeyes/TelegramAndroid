@@ -53,6 +53,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int inappCameraRow;
     private int photoHasStickerRow;
 
+    private int syncPinsRow;
     private int pinOrderRow;
 
     @Override
@@ -67,9 +68,22 @@ public class ForkSettingsActivity extends BaseFragment {
         photoHasStickerRow = rowCount++;
 
         sectionRow2 = rowCount++;
+        syncPinsRow = rowCount++;
         pinOrderRow = rowCount++;
 
         return true;
+    }
+
+    public boolean toggleGlobalMainSetting(String option, View view, boolean byDefault) {
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        boolean optionBool = preferences.getBoolean(option, byDefault);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(option, !optionBool);
+        editor.commit();
+        if (view instanceof TextCheckCell) {
+            ((TextCheckCell) view).setChecked(!optionBool);
+        }
+        return !optionBool;
     }
 
     @Override
@@ -128,6 +142,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.hasSticker);
                 }
+            } else if (position == syncPinsRow) {
+                toggleGlobalMainSetting("syncPins", view, true);
             } else if (position == pinOrderRow) {
                 presentFragment(new PinsOrderActivity());
             }
@@ -182,6 +198,10 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("PhotoHasSticker", R.string.PhotoHasSticker);
                         String info = LocaleController.getString("PhotoHasStickerInfo", R.string.PhotoHasStickerInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("photoHasSticker", false), true, false);
+                    } else if (position == syncPinsRow) {
+                        String t = LocaleController.getString("SyncPins", R.string.SyncPins);
+                        String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("syncPins", true), true, false);
                     }
                     break;
                 }
@@ -203,6 +223,7 @@ public class ForkSettingsActivity extends BaseFragment {
             boolean fork = position == squareAvatarsRow
                         || position == inappCameraRow
                         || position == photoHasStickerRow
+                        || position == syncPinsRow
                         || position == pinOrderRow;
             return fork;
         }
@@ -247,6 +268,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 return 2;
             } else if (position == squareAvatarsRow 
                 || position == inappCameraRow 
+                || position == syncPinsRow 
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (position == sectionRow1
