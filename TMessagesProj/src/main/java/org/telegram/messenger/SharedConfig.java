@@ -79,6 +79,7 @@ public class SharedConfig {
     public static int fontSize = AndroidUtilities.dp(16);
 
     public static boolean hideTitleDialog = false;
+    public static boolean hasSticker;
 
     static {
         loadConfig();
@@ -227,6 +228,7 @@ public class SharedConfig {
             sortContactsByName = preferences.getBoolean("sortContactsByName", false);
 
             hideTitleDialog = preferences.getBoolean("hideTitle", false);
+            hasSticker = preferences.getBoolean("photoHasSticker", true);
 
             configLoaded = true;
         }
@@ -482,6 +484,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("groupPhotosEnabled", groupPhotosEnabled);
+        editor.commit();
+    }
+
+    public static void toggleHasSticker() {
+        hasSticker = !hasSticker;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("photoHasSticker", hasSticker);
         editor.commit();
     }
 

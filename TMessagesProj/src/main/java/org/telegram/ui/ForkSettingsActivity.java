@@ -50,6 +50,7 @@ public class ForkSettingsActivity extends BaseFragment {
 
     private int squareAvatarsRow;
     private int inappCameraRow;
+    private int photoHasStickerRow;
 
     private int pinOrderRow;
 
@@ -62,6 +63,8 @@ public class ForkSettingsActivity extends BaseFragment {
         sectionRow1 = rowCount++;
         squareAvatarsRow = rowCount++;
         inappCameraRow = rowCount++;
+        photoHasStickerRow = rowCount++;
+
         pinOrderRow = rowCount++;
 
         return true;
@@ -118,6 +121,11 @@ public class ForkSettingsActivity extends BaseFragment {
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.inappCamera);
                 }
+            } else if (position == photoHasStickerRow) {
+                SharedConfig.toggleHasSticker();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.hasSticker);
+                }
             } else if (position == pinOrderRow) {
                 presentFragment(new PinsOrderActivity());
             }
@@ -168,6 +176,10 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("InAppCamera", R.string.InAppCamera);
                         String info = LocaleController.getString("InAppCameraInfo", R.string.InAppCameraInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("inappCamera", true), false, false);
+                    } else if (position == photoHasStickerRow) {
+                        String t = LocaleController.getString("PhotoHasSticker", R.string.PhotoHasSticker);
+                        String info = LocaleController.getString("PhotoHasStickerInfo", R.string.PhotoHasStickerInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("photoHasSticker", false), true, false);
                     }
                     break;
                 }
@@ -185,7 +197,8 @@ public class ForkSettingsActivity extends BaseFragment {
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             boolean fork = position == squareAvatarsRow
-                        || position == inappCameraRow;
+                        || position == inappCameraRow
+                        || position == photoHasStickerRow
                         || position == pinOrderRow;
             return fork;
         }
@@ -230,6 +243,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 return 2;
             } else if (position == squareAvatarsRow 
                 || position == inappCameraRow 
+                || position == photoHasStickerRow 
                 || position == pinOrderRow) {
                 return 3;
             } else if (position == sectionRow1) {
