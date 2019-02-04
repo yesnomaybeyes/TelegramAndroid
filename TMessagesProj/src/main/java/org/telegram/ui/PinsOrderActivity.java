@@ -162,14 +162,7 @@ public class PinsOrderActivity extends BaseFragment implements NotificationCente
             int lower_id = (int) dialog.id;
             int high_id = (int) (dialog.id >> 32);
             if (lower_id != 0 && high_id != 1) {
-                if (lower_id > 0) {
-                    dialogs.add(dialog);
-                } else {
-                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                    if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
-                        dialogs.add(dialog);
-                    }
-                }
+                dialogs.add(dialog);
             }
         }
     }
