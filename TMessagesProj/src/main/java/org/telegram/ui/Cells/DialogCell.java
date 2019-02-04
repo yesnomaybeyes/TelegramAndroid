@@ -39,6 +39,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.GroupCreateCheckBox;
 
+import org.telegram.tgnet.ConnectionsManager;
+
 import java.util.ArrayList;
 
 public class DialogCell extends BaseCell {
@@ -1214,6 +1216,28 @@ public class DialogCell extends BaseCell {
         }
 
         avatarImage.draw(canvas);
+
+        int lower_id = (int) currentDialogId;
+        if (lower_id > 0) {
+            user = MessagesController.getInstance(currentAccount).getUser(lower_id);
+            if (user == null) return;
+            if (!UserObject.isUserSelf(user) &&
+                user.status != null &&
+                user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                int avatarLeft;
+                if (!LocaleController.isRTL) {
+                    avatarLeft = AndroidUtilities.dp(AndroidUtilities.isTablet() ? 13 : 9);
+                } else {
+                    avatarLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.isTablet() ? 65 : 61);
+                }
+                int top = AndroidUtilities.dp(44) + avatarTop;
+                int left = AndroidUtilities.dp(44) + avatarLeft;
+                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                canvas.drawCircle(left, top, AndroidUtilities.dp(7), Theme.dialogs_onlineCirclePaint);
+                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
+                canvas.drawCircle(left, top, AndroidUtilities.dp(5), Theme.dialogs_onlineCirclePaint);
+            }
+        }
     }
 
     @Override
