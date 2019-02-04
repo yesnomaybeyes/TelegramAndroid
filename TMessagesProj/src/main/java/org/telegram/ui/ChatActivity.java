@@ -11147,7 +11147,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (!selectedObject.needDrawBluredPreview() && !selectedObject.isLiveLocation()) {
                             items.add(LocaleController.getString("Forward", R.string.Forward));
                             options.add(2);
-                            items.add("Anonymous Forward");
+                            items.add(LocaleController.getString("AnonymousForward", R.string.AnonymousForward));
                             options.add(202);
                         }
                         if (allowUnpin) {
