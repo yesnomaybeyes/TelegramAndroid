@@ -53,6 +53,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int inappCameraRow;
     private int photoHasStickerRow;
     private int unmutedOnTopRow;
+    private int shareAnonymRow;
 
     private int syncPinsRow;
     private int pinOrderRow;
@@ -70,6 +71,7 @@ public class ForkSettingsActivity extends BaseFragment {
         inappCameraRow = rowCount++;
         photoHasStickerRow = rowCount++;
         unmutedOnTopRow = rowCount++;
+        shareAnonymRow = rowCount++;
 
         emptyRow = rowCount++;
         sectionRow2 = rowCount++;
@@ -152,6 +154,8 @@ public class ForkSettingsActivity extends BaseFragment {
             } else if (position == unmutedOnTopRow) {
                 toggleGlobalMainSetting("unmutedOnTop", view, false);
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
+            } else if (position == shareAnonymRow) {
+                toggleGlobalMainSetting("shareAlertAsAnonym", view, true);
             } else if (position == pinOrderRow) {
                 presentFragment(new PinsOrderActivity());
             }
@@ -214,6 +218,9 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("UnmutedOnTop", R.string.UnmutedOnTop);
                         String info = LocaleController.getString("UnmutedOnTopInfo", R.string.UnmutedOnTopInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("unmutedOnTop", false), true, false);
+                    } else if (position == shareAnonymRow) {
+                        String t = LocaleController.getString("ShareAlertAnonym", R.string.ShareAlertAnonym);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("shareAlertAsAnonym", true), true);
                     }
                     break;
                 }
@@ -237,6 +244,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == photoHasStickerRow
                         || position == syncPinsRow
                         || position == unmutedOnTopRow
+                        || position == shareAnonymRow
                         || position == pinOrderRow;
             return fork;
         }
@@ -283,6 +291,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == inappCameraRow
                 || position == syncPinsRow
                 || position == unmutedOnTopRow
+                || position == shareAnonymRow
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (position == sectionRow1

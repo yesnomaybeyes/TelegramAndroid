@@ -30,5 +30,6 @@
     <string name="PhotoHasStickerInfo">При использовании стикеров на фотографии</string>
     <string name="PinDialogsOrder">Порядок закреп. диалогов</string>
     <string name="PinSection">Закреплённые диалоги</string>
+    <string name="ShareAlertAnonym">Анонимная кнопка Share</string>
     
 </resources>

@@ -123,6 +123,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     public ShareAlert(final Context context, ArrayList<MessageObject> messages, final String text, boolean publicChannel, final String copyLink, boolean fullScreen) {
         super(context, true);
 
+        android.content.SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        boolean shareAnonym = preferences.getBoolean("shareAlertAsAnonym", true);
+
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
 
@@ -247,10 +250,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
                                 SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
                             }
-                            for (MessageObject object : sendingMessageObjects) {
-                                SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(object, key);
+                            if (shareAnonym) {
+                                for (MessageObject object : sendingMessageObjects) {
+                                    SendMessagesHelper.getInstance(currentAccount).processForwardFromMyName(object, key);
+                                }
+                            } else {
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
                             }
-                            // SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
                         }
                     } else if (sendingText != null) {
                         for (int a = 0; a < selectedDialogs.size(); a++) {
@@ -289,14 +295,19 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
-        frameLayout.addView(imageView, LayoutHelper.createFrame(48 * 2 + 5, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         ImageView emptyCaptionButton = new ImageView(context);
         emptyCaptionButton.setImageResource(R.drawable.photo_paint_text);
         emptyCaptionButton.setColorFilter(emptyCaptionButtonFilterGrey);
         emptyCaptionButton.setScaleType(ImageView.ScaleType.CENTER);
         emptyCaptionButton.setPadding(0, AndroidUtilities.dp(2), 0, 0);
-        frameLayout.addView(emptyCaptionButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
+        int leftImageView = 48;
+        if (shareAnonym) {
+            leftImageView = 48 * 2 + 5;
+            frameLayout.addView(emptyCaptionButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        }
+        frameLayout.addView(imageView, LayoutHelper.createFrame(leftImageView, 48, Gravity.LEFT | Gravity.CENTER_VERTICAL));
         SendMessagesHelper.IS_EMPTY_CAPTION = false;
 
         emptyCaptionButton.setOnClickListener(v -> {

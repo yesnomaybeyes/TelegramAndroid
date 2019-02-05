@@ -2464,4 +2464,5 @@
     <string name="PhotoHasStickerInfo">When using Stickers on Photo</string>
     <string name="PinDialogsOrder">Pin Dialogs Order</string>
     <string name="PinSection">Pin Dialogs</string>
+    <string name="ShareAlertAnonym">Anonymous Share Button</string>
 </resources>
