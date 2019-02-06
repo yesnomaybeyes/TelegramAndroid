@@ -1262,9 +1262,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     checkAndUpdateAvatar();
                     if (hideTitleItem != null) {
                         if (SharedConfig.hideTitleDialog) {
-                            hideTitleItem.setText("Show title");
+                            hideTitleItem.setText(LocaleController.getString("ShowTitle", R.string.ShowTitle));
                         } else {
-                            hideTitleItem.setText("Hide title");
+                            hideTitleItem.setText(LocaleController.getString("HideTitle", R.string.HideTitle));
                         }
                     }
 
@@ -1458,7 +1458,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             updateBotButtons();
         }
 
-        String hideTitleString = SharedConfig.hideTitleDialog ? "Show title" : "Hide title";
+        String hideTitleString = "";
+        if (SharedConfig.hideTitleDialog) {
+            hideTitleString = LocaleController.getString("ShowTitle", R.string.ShowTitle);
+        } else {
+            hideTitleString = LocaleController.getString("HideTitle", R.string.HideTitle);
+        }
         hideTitleItem = headerItem.addSubItem(hideTitle, hideTitleString);
 
         if (currentUser != null) {
