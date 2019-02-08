@@ -818,21 +818,23 @@ public class AlertsCreator {
         builder.setTitle(LocaleController.getString("Notifications", R.string.Notifications));
         CharSequence[] items = new CharSequence[]{
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 1)),
+                LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 3)),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 8)),
+                LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Hours", 24)),
                 LocaleController.formatString("MuteFor", R.string.MuteFor, LocaleController.formatPluralString("Days", 2)),
                 LocaleController.getString("MuteDisable", R.string.MuteDisable)
         };
         builder.setItems(items, (dialogInterface, i) -> {
             int untilTime = ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
-            if (i == 0) {
-                untilTime += 60 * 60;
-            } else if (i == 1) {
-                untilTime += 60 * 60 * 8;
-            } else if (i == 2) {
-                untilTime += 60 * 60 * 48;
-            } else if (i == 3) {
-                untilTime = Integer.MAX_VALUE;
-            }
+            int[] times = new int[] {
+                60 * 60,
+                60 * 60 * 3,
+                60 * 60 * 8,
+                60 * 60 * 24,
+                60 * 60 * 48,
+                Integer.MAX_VALUE - untilTime
+            };
+            untilTime += times[i];
 
             SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
             SharedPreferences.Editor editor = preferences.edit();
