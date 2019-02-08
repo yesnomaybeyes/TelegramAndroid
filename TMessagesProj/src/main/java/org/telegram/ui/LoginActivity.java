@@ -111,9 +111,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-//SmsManager mgr = SmsManager.getDefault();
-//String token = mgr.createAppSpecificSmsToken(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 0, new Intent("SMS_RECEIVED"), PendingIntent.FLAG_UPDATE_CURRENT));
-
 @SuppressLint("HardwareIds")
 public class LoginActivity extends BaseFragment {
 
@@ -206,7 +203,9 @@ public class LoginActivity extends BaseFragment {
                         views[currentViewNum].onNextPressed();
                     }
                 } else if (id == -1) {
-                    onBackPressed();
+                    if (onBackPressed()) {
+                        finishFragment();
+                    }
                 }
             }
         });

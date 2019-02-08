@@ -66,6 +66,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public ArrayList<TLRPC.TL_dialog> dialogsForward = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsServerOnly = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsGroupsOnly = new ArrayList<>();
+    public ArrayList<TLRPC.TL_dialog> dialogsChannelsOnly = new ArrayList<>();
+    public ArrayList<TLRPC.TL_dialog> dialogsUsersOnly = new ArrayList<>();
     public int unreadUnmutedDialogs;
     public int nextDialogsCacheOffset;
     public ConcurrentHashMap<Long, Integer> dialogs_read_inbox_max = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -190,6 +192,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private int statusSettingState;
     private boolean offlineSent;
     private String uploadingAvatar;
+
+    private String uploadingWallpaper;
+    private boolean uploadingWallpaperBlurred;
+    private boolean uploadingWallpaperMotion;
 
     public boolean enableJoined;
     public String linkPrefix;
@@ -729,11 +735,52 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         });
                     }
                 });
+            } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
+                TLRPC.TL_account_uploadWallPaper req = new TLRPC.TL_account_uploadWallPaper();
+                req.file = file;
+                req.mime_type = "image/jpeg";
+                final TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
+                settings.blur = uploadingWallpaperBlurred;
+                settings.motion = uploadingWallpaperMotion;
+                req.settings = settings;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                    TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
+                    File path = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperBlurred ? "wallpaper_original.jpg" : "wallpaper.jpg");
+                    if (wallPaper != null) {
+                        try {
+                            AndroidUtilities.copyFile(path, FileLoader.getPathToAttach(wallPaper.document, true));
+                        } catch (Exception ignore) {
+
+                        }
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (uploadingWallpaper != null && wallPaper != null) {
+                            wallPaper.settings = settings;
+                            wallPaper.flags |= 4;
+                            SharedPreferences preferences = getGlobalMainSettings();
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putLong("selectedBackground2", wallPaper.id);
+                            editor.commit();
+                            ArrayList<TLRPC.WallPaper> wallpapers = new ArrayList<>();
+                            wallpapers.add(wallPaper);
+                            MessagesStorage.getInstance(currentAccount).putWallpapers(wallpapers, 2);
+                            TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 320);
+                            if (image != null) {
+                                String newKey = image.location.volume_id + "_" + image.location.local_id + "@100_100";
+                                String oldKey = Utilities.MD5(path.getAbsolutePath()) + "@100_100";
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, image.location, false);
+                            }
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.wallpapersNeedReload, wallPaper.id);
+                        }
+                    });
+                });
             }
         } else if (id == NotificationCenter.FileDidFailUpload) {
             final String location = (String) args[0];
             if (uploadingAvatar != null && uploadingAvatar.equals(location)) {
                 uploadingAvatar = null;
+            } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
+                uploadingWallpaper = null;
             }
         } else if (id == NotificationCenter.messageReceivedByServer) {
             Integer msgId = (Integer) args[0];
@@ -802,6 +849,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         dialogsServerOnly.clear();
         dialogsForward.clear();
         dialogsGroupsOnly.clear();
+        dialogsChannelsOnly.clear();
+        dialogsUsersOnly.clear();
         dialogMessagesByIds.clear();
         dialogMessagesByRandomIds.clear();
         channelAdmins.clear();
@@ -869,6 +918,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         registeringForPush = false;
         getDifferenceFirstSync = true;
         uploadingAvatar = null;
+        uploadingWallpaper = null;
         statusRequest = 0;
         statusSettingState = 0;
 
@@ -2225,6 +2275,83 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         FileLoader.getInstance(currentAccount).uploadFile(uploadingAvatar, false, true, ConnectionsManager.FileTypePhoto);
     }
 
+    public void saveWallpaperToServer(File path, long wallPaperId, long accessHash, boolean isBlurred, boolean isMotion, int backgroundColor, float intesity, boolean install, long taskId) {
+        if (uploadingWallpaper != null) {
+            File finalPath = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperBlurred ? "wallpaper_original.jpg" : "wallpaper.jpg");
+            if (path != null && (path.getAbsolutePath().equals(uploadingWallpaper) || path.equals(finalPath))) {
+                uploadingWallpaperMotion = isMotion;
+                uploadingWallpaperBlurred = isBlurred;
+                return;
+            }
+            FileLoader.getInstance(currentAccount).cancelUploadFile(uploadingWallpaper, false);
+            uploadingWallpaper = null;
+        }
+        if (path != null) {
+            uploadingWallpaper = path.getAbsolutePath();
+            uploadingWallpaperMotion = isMotion;
+            uploadingWallpaperBlurred = isBlurred;
+            FileLoader.getInstance(currentAccount).uploadFile(uploadingWallpaper, false, true, ConnectionsManager.FileTypePhoto);
+        } else if (accessHash != 0) {
+            TLRPC.TL_inputWallPaper inputWallPaper = new TLRPC.TL_inputWallPaper();
+            inputWallPaper.id = wallPaperId;
+            inputWallPaper.access_hash = accessHash;
+
+            TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
+            settings.blur = isBlurred;
+            settings.motion = isMotion;
+            if (backgroundColor != 0) {
+                settings.background_color = backgroundColor;
+                settings.flags |= 1;
+                settings.intensity = (int) (intesity * 100);
+                settings.flags |= 8;
+            }
+
+            TLObject req;
+            if (install) {
+                TLRPC.TL_account_installWallPaper request = new TLRPC.TL_account_installWallPaper();
+                request.wallpaper = inputWallPaper;
+                request.settings = settings;
+                req = request;
+            } else {
+                TLRPC.TL_account_saveWallPaper request = new TLRPC.TL_account_saveWallPaper();
+                request.wallpaper = inputWallPaper;
+                request.settings = settings;
+                req = request;
+            }
+
+            final long newTaskId;
+            if (taskId != 0) {
+                newTaskId = taskId;
+            } else {
+                NativeByteBuffer data = null;
+                try {
+                    data = new NativeByteBuffer(44);
+                    data.writeInt32(12);
+                    data.writeInt64(wallPaperId);
+                    data.writeInt64(accessHash);
+                    data.writeBool(isBlurred);
+                    data.writeBool(isMotion);
+                    data.writeInt32(backgroundColor);
+                    data.writeDouble(intesity);
+                    data.writeBool(install);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                newTaskId = MessagesStorage.getInstance(currentAccount).createPendingTask(data);
+            }
+
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                MessagesStorage.getInstance(currentAccount).removePendingTask(newTaskId);
+                if (!install && uploadingWallpaper != null) {
+                    SharedPreferences preferences = getGlobalMainSettings();
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putLong("selectedBackground2", wallPaperId);
+                    editor.commit();
+                }
+            });
+        }
+    }
+
     public void markChannelDialogMessageAsDeleted(ArrayList<Integer> messages, final int channelId) {
         MessageObject obj = dialogMessage.get((long) -channelId);
         if (obj != null) {
@@ -2421,6 +2548,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             });
                         }
                         dialogsGroupsOnly.remove(dialog);
+                        dialogsChannelsOnly.remove(dialog);
+                        dialogsUsersOnly.remove(dialog);
                         dialogsForward.remove(dialog);
                         dialogs_dict.remove(did);
                         dialogs_read_inbox_max.remove(did);
@@ -4303,6 +4432,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             }
 
             final LongSparseArray<TLRPC.TL_dialog> new_dialogs_dict = new LongSparseArray<>();
+            final SparseArray<TLRPC.EncryptedChat> enc_chats_dict;
             final LongSparseArray<MessageObject> new_dialogMessage = new LongSparseArray<>();
             final SparseArray<TLRPC.User> usersDict = new SparseArray<>();
             final SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
@@ -4314,6 +4444,15 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             for (int a = 0; a < dialogsRes.chats.size(); a++) {
                 TLRPC.Chat c = dialogsRes.chats.get(a);
                 chatsDict.put(c.id, c);
+            }
+            if (encChats != null) {
+                enc_chats_dict = new SparseArray<>();
+                for (int a = 0, N = encChats.size(); a < N; a++) {
+                    TLRPC.EncryptedChat encryptedChat = encChats.get(a);
+                    enc_chats_dict.put(encryptedChat.id, encryptedChat);
+                }
+            } else {
+                enc_chats_dict = null;
             }
             if (loadType == 1) {
                 nextDialogsCacheOffset = offset + count;
@@ -4402,6 +4541,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 if (d.id == 0) {
                     continue;
+                }
+                int lower_id = (int) d.id;
+                int high_id = (int) (d.id >> 32);
+                if (lower_id == 0 && enc_chats_dict != null) {
+                    if (enc_chats_dict.get(high_id) == null) {
+                        continue;
+                    }
                 }
                 if (proxyDialogId != 0 && proxyDialogId == d.id) {
                     proxyDialog = d;
@@ -6497,7 +6643,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                     long[] ids = corrected.valueAt(a);
                                     int oldId = (int) ids[1];
                                     SendMessagesHelper.getInstance(currentAccount).processSentMessage(oldId);
-                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newId, null, ids[0], 0L);
+                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newId, null, ids[0], 0L, -1);
                                 }
                             });
                         }
@@ -6743,7 +6889,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                         long[] ids = corrected.valueAt(a);
                                         int oldId = (int) ids[1];
                                         SendMessagesHelper.getInstance(currentAccount).processSentMessage(oldId);
-                                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newId, null, ids[0], 0L);
+                                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newId, null, ids[0], 0L, -1);
                                     }
                                 });
                             }
@@ -9642,6 +9788,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 dialogs.remove(dialog);
                 dialogsServerOnly.remove(dialog);
                 dialogsGroupsOnly.remove(dialog);
+                dialogsChannelsOnly.remove(dialog);
+                dialogsUsersOnly.remove(dialog);
                 dialogsForward.remove(dialog);
                 dialogs_dict.remove(dialog.id);
                 dialogs_read_inbox_max.remove(dialog.id);
@@ -9760,6 +9908,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public void sortDialogs(SparseArray<TLRPC.Chat> chatsDict) {
         dialogsServerOnly.clear();
         dialogsGroupsOnly.clear();
+        dialogsChannelsOnly.clear();
+        dialogsUsersOnly.clear();
         dialogsForward.clear();
         unreadUnmutedDialogs = 0;
         boolean selfAdded = false;
@@ -9789,6 +9939,11 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                     if (chat != null && (chat.megagroup && (chat.admin_rights != null && (chat.admin_rights.post_messages || chat.admin_rights.add_admins)) || chat.creator)) {
                         dialogsGroupsOnly.add(d);
                     }
+                    if (chat != null && chat.megagroup) {
+
+                    } else {
+                        dialogsChannelsOnly.add(d);
+                    }
                 } else if (lower_id < 0) {
                     if (chatsDict != null) {
                         TLRPC.Chat chat = chatsDict.get(-lower_id);
@@ -9799,6 +9954,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
                     dialogsGroupsOnly.add(d);
+                } else if (lower_id > 0) {
+                    dialogsUsersOnly.add(d);
                 }
             }
             if (proxyDialog != null && d.id == proxyDialog.id && isLeftProxyChannel) {

@@ -359,7 +359,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (position == dataRow) {
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
-                presentFragment(new ChatSettingsActivity());
+                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
             } else if (position == forkRow) {
                 presentFragment(new ForkSettingsActivity());
             } else if (position == helpRow) {

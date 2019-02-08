@@ -956,10 +956,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         TLRPC.Chat chat = isChat ? MessagesController.getInstance(currentAccount).getChat(-lower_id) : null;
                         if (lower_id == 0) {
                             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
-                            if (encryptedChat == null) {
-                                return false;
+                            if (encryptedChat != null) {
+                                user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
+                            } else {
+                                user = new TLRPC.TL_userEmpty();
                             }
-                            user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
                         } else {
                             user = !isChat && lower_id > 0 && high_id != 1 ? MessagesController.getInstance(currentAccount).getUser(lower_id) : null;
                         }
@@ -1499,7 +1500,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (activity != null) {
                 checkPermission = false;
                 if (activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED || activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    if (UserConfig.getInstance(currentAccount).syncContacts && activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
+                    if (askAboutContacts && UserConfig.getInstance(currentAccount).syncContacts && activity.shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
                         AlertDialog.Builder builder = AlertsCreator.createContactsPermissionDialog(activity, param -> {
                             askAboutContacts = param != 0;
                             MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts).commit();
@@ -1553,6 +1554,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         super.onPause();
         if (commentView != null) {
             commentView.onResume();
+        }
+        if (undoView != null) {
+            undoView.hide(true, false);
         }
     }
 
@@ -1799,7 +1803,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     protected void onDialogDismiss(Dialog dialog) {
         super.onDialogDismiss(dialog);
-        if (permissionDialog != null && dialog == permissionDialog && getParentActivity() != null) {
+        if (permissionDialog != null && dialog == permissionDialog && getParentActivity() != null && askAboutContacts) {
             askForPermissons(false);
         }
     }
@@ -1989,6 +1993,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return MessagesController.getInstance(currentAccount).dialogsGroupsOnly;
         } else if (dialogsType == 3) {
             return MessagesController.getInstance(currentAccount).dialogsForward;
+        } else if (dialogsType == 4) {
+            return MessagesController.getInstance(currentAccount).dialogsUsersOnly;
+        } else if (dialogsType == 5) {
+            return MessagesController.getInstance(currentAccount).dialogsChannelsOnly;
         }
         return null;
     }

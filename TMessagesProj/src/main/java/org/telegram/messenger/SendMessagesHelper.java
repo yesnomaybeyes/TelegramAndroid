@@ -987,10 +987,15 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
             messageOwnerMessage = "";
         }
         if (messageObject.messageOwner.media != null && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame) && !(messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice)) {
+            HashMap<String, String> params = null;
+            if ((int) did == 0 && messageObject.messageOwner.to_id != null && (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo || messageObject.messageOwner.media.document instanceof TLRPC.TL_document)) {
+                params = new HashMap<>();
+                params.put("parentObject", "sent_" + messageObject.messageOwner.to_id.channel_id + "_" + messageObject.getId());
+            }
             if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
-                sendMessage((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, did, messageObject.replyMessageObject, messageOwnerMessage, messageObject.messageOwner.entities, null, null, messageObject.messageOwner.media.ttl_seconds, messageObject);
+                sendMessage((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, did, messageObject.replyMessageObject, messageOwnerMessage, messageObject.messageOwner.entities, null, params, messageObject.messageOwner.media.ttl_seconds, messageObject);
             } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
-                sendMessage((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject, messageOwnerMessage, messageObject.messageOwner.entities, null, null, messageObject.messageOwner.media.ttl_seconds, messageObject);
+                sendMessage((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject, messageOwnerMessage, messageObject.messageOwner.entities, null, params, messageObject.messageOwner.media.ttl_seconds, messageObject);
             } else if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaVenue || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGeo) {
                 sendMessage(messageObject.messageOwner.media, did, messageObject.replyMessageObject, null, null);
             } else if (messageObject.messageOwner.media.phone_number != null) {
@@ -1453,6 +1458,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
                                         sentMessages.add(message);
                                         updateMediaPaths(msgObj1, message, message.id, null, true);
+                                        int existFlags = msgObj1.getMediaExistanceFlags();
                                         newMsgObj1.id = message.id;
                                         sentCount++;
                                         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
@@ -1461,7 +1467,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                             AndroidUtilities.runOnUIThread(() -> {
                                                 newMsgObj1.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                                 DataQuery.getInstance(currentAccount).increasePeerRaiting(peer);
-                                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, message.id, message, peer, 0L);
+                                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, message.id, message, peer, 0L, existFlags);
                                                 processSentMessage(oldId);
                                                 removeFromSendingMessages(oldId);
                                             });
@@ -3093,7 +3099,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 delayedMessage.originalPath = originalPath;
                                 delayedMessage.sendEncryptedRequest = reqSend;
                                 delayedMessage.obj = newMsgObj;
-                                delayedMessage.parentObject = parentObject;
+                                if (params != null && params.containsKey("parentObject")) {
+                                    delayedMessage.parentObject = params.get("parentObject");
+                                } else {
+                                    delayedMessage.parentObject = parentObject;
+                                }
                                 delayedMessage.performMediaUpload = true;
                             }
                             if (!TextUtils.isEmpty(path) && path.startsWith("http")) {
@@ -3153,7 +3163,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 delayedMessage.sendEncryptedRequest = reqSend;
                                 delayedMessage.originalPath = originalPath;
                                 delayedMessage.obj = newMsgObj;
-                                delayedMessage.parentObject = parentObject;
+                                if (params != null && params.containsKey("parentObject")) {
+                                    delayedMessage.parentObject = params.get("parentObject");
+                                } else {
+                                    delayedMessage.parentObject = parentObject;
+                                }
                                 delayedMessage.performMediaUpload = true;
                             }
                             delayedMessage.videoEditedInfo = videoEditedInfo;
@@ -3217,7 +3231,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 delayedMessage.sendEncryptedRequest = reqSend;
                                 delayedMessage.type = 2;
                                 delayedMessage.obj = newMsgObj;
-                                delayedMessage.parentObject = parentObject;
+                                if (params != null && params.containsKey("parentObject")) {
+                                    delayedMessage.parentObject = params.get("parentObject");
+                                } else {
+                                    delayedMessage.parentObject = parentObject;
+                                }
                                 delayedMessage.encryptedChat = encryptedChat;
                                 delayedMessage.performMediaUpload = true;
                                 if (path != null && path.length() > 0 && path.startsWith("http")) {
@@ -3393,7 +3411,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         }
                         if (!file.exists()) {
                             putToDelayedMessages(FileLoader.getAttachFileName(message.location), message);
-                            FileLoader.getInstance(currentAccount).loadFile(message.location, message, "jpg", 0, 2, 0);
+                            FileLoader.getInstance(currentAccount).loadFile(message.location, message.parentObject, "jpg", 0, 2, 0);
                             return;
                         }
                     }
@@ -3469,7 +3487,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         File file = new File(location);
                         if (!file.exists()) {
                             putToDelayedMessages(FileLoader.getAttachFileName(document), message);
-                            FileLoader.getInstance(currentAccount).loadFile(document, message, 2, 0);
+                            FileLoader.getInstance(currentAccount).loadFile(document, message.parentObject, 2, 0);
                             return;
                         }
                     }
@@ -3511,7 +3529,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         File file = new File(location);
                         if (!file.exists()) {
                             putToDelayedMessages(FileLoader.getAttachFileName(document), message);
-                            FileLoader.getInstance(currentAccount).loadFile(document, message, 2, 0);
+                            FileLoader.getInstance(currentAccount).loadFile(document, message.parentObject, 2, 0);
                             return;
                         }
                     }
@@ -3835,6 +3853,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
                     final String attachPath = newMsgObj.attachPath;
                     final long grouped_id;
+                    final int existFlags;
 
                     Integer id = newIds.get(newMsgObj.random_id);
                     if (id != null) {
@@ -3842,6 +3861,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         if (message != null) {
                             sentMessages.add(message);
                             updateMediaPaths(msgObj, message, message.id, originalPath, false);
+                            existFlags = msgObj.getMediaExistanceFlags();
                             newMsgObj.id = message.id;
                             if ((newMsgObj.flags & TLRPC.MESSAGE_FLAG_MEGAGROUP) != 0) {
                                 message.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
@@ -3866,13 +3886,13 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                     if (!isSentError) {
                         StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, 1);
                         newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags);
                         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
                             MessagesStorage.getInstance(currentAccount).updateMessageStateAndId(newMsgObj.random_id, oldId, newMsgObj.id, 0, false, newMsgObj.to_id.channel_id);
                             MessagesStorage.getInstance(currentAccount).putMessages(sentMessages, true, false, false, 0);
                             AndroidUtilities.runOnUIThread(() -> {
                                 DataQuery.getInstance(currentAccount).increasePeerRaiting(newMsgObj.dialog_id);
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, grouped_id, existFlags);
                                 processSentMessage(oldId);
                                 removeFromSendingMessages(oldId);
                             });
@@ -4027,9 +4047,11 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         final boolean isBroadcast = req instanceof TLRPC.TL_messages_sendBroadcast;
                         final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
                         final String attachPath = newMsgObj.attachPath;
+                        final int existFlags;
                         if (response instanceof TLRPC.TL_updateShortSentMessage) {
                             final TLRPC.TL_updateShortSentMessage res = (TLRPC.TL_updateShortSentMessage) response;
                             updateMediaPaths(msgObj, null, res.id, null, false);
+                            existFlags = msgObj.getMediaExistanceFlags();
                             newMsgObj.local_id = newMsgObj.id = res.id;
                             newMsgObj.date = res.date;
                             newMsgObj.entities = res.entities;
@@ -4079,11 +4101,15 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                 }
                                 message.unread = value < message.id;
                                 updateMediaPaths(msgObj, message, message.id, originalPath, false);
+                                existFlags = msgObj.getMediaExistanceFlags();
                                 newMsgObj.id = message.id;
                             } else {
                                 isSentError = true;
+                                existFlags = 0;
                             }
                             Utilities.stageQueue.postRunnable(() -> MessagesController.getInstance(currentAccount).processUpdates(updates, false));
+                        } else {
+                            existFlags = 0;
                         }
 
                         if (MessageObject.isLiveLocationMessage(newMsgObj)) {
@@ -4093,7 +4119,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         if (!isSentError) {
                             StatsController.getInstance(currentAccount).incrementSentItemsCount(ApplicationLoader.getCurrentNetworkType(), StatsController.TYPE_MESSAGES, 1);
                             newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
-                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj, newMsgObj.dialog_id, 0L);
+                            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj, newMsgObj.dialog_id, 0L, existFlags);
                             MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
                                 MessagesStorage.getInstance(currentAccount).updateMessageStateAndId(newMsgObj.random_id, oldId, (isBroadcast ? oldId : newMsgObj.id), 0, false, newMsgObj.to_id.channel_id);
                                 MessagesStorage.getInstance(currentAccount).putMessages(sentMessages, true, false, isBroadcast, 0);
@@ -4114,7 +4140,7 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.dialogsNeedReload);
                                     }
                                     DataQuery.getInstance(currentAccount).increasePeerRaiting(newMsgObj.dialog_id);
-                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj, newMsgObj.dialog_id, 0L);
+                                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.messageReceivedByServer, oldId, (isBroadcast ? oldId : newMsgObj.id), newMsgObj, newMsgObj.dialog_id, 0L, existFlags);
                                     processSentMessage(oldId);
                                     removeFromSendingMessages(oldId);
                                 });
@@ -4583,6 +4609,12 @@ public class SendMessagesHelper implements NotificationCenter.NotificationCenter
                         break;
                     case "opus":
                         document.mime_type = "audio/opus";
+                        break;
+                    case "mp3":
+                        document.mime_type = "audio/mpeg";
+                        break;
+                    case "m4a":
+                        document.mime_type = "audio/m4a";
                         break;
                     case "ogg":
                         document.mime_type = "audio/ogg";
