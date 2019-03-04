@@ -958,7 +958,7 @@ public class AlertsCreator {
                     SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
                     SharedPreferences.Editor editor = preferences.edit();
                     long flags;
-                    if (i == 3) {
+                    if (i == (times.length - 1)) {
                         editor.putInt("notify2_" + dialog_id, 2);
                         flags = 1;
                     } else {
