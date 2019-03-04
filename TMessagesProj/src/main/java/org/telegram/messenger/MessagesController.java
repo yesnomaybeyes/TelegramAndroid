@@ -50,6 +50,8 @@ import java.util.concurrent.CountDownLatch;
 
 import org.telegram.messenger.SharedConfig;
 
+import android.support.v4.app.NotificationManagerCompat;
+
 public class MessagesController implements NotificationCenter.NotificationCenterDelegate {
 
     private ConcurrentHashMap<Integer, TLRPC.Chat> chats = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -65,9 +67,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     public ArrayList<TLRPC.TL_dialog> dialogs = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsForward = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsServerOnly = new ArrayList<>();
-    public ArrayList<TLRPC.TL_dialog> dialogsGroupsOnly = new ArrayList<>();
+    public ArrayList<TLRPC.TL_dialog> dialogsCanAddUsers = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsChannelsOnly = new ArrayList<>();
     public ArrayList<TLRPC.TL_dialog> dialogsUsersOnly = new ArrayList<>();
+    public ArrayList<TLRPC.TL_dialog> dialogsGroupsOnly = new ArrayList<>();
     public int unreadUnmutedDialogs;
     public int nextDialogsCacheOffset;
     public ConcurrentHashMap<Long, Integer> dialogs_read_inbox_max = new ConcurrentHashMap<>(100, 1.0f, 2);
@@ -169,6 +172,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
     private TLRPC.TL_dialog proxyDialog;
     private boolean isLeftProxyChannel;
     private long proxyDialogId;
+    private String proxyDialogAddress;
 
     private boolean checkingTosUpdate;
     private int nextTosCheckTime;
@@ -444,6 +448,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
         proxyDialogId = mainPreferences.getLong("proxy_dialog", 0);
+        proxyDialogAddress = mainPreferences.getString("proxyDialogAddress", null);
         nextTosCheckTime = notificationsPreferences.getInt("nextTosCheckTime", 0);
         venueSearchBot = mainPreferences.getString("venueSearchBot", "foursquare");
         gifSearchBot = mainPreferences.getString("gifSearchBot", "gif");
@@ -456,6 +461,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void updateConfig(final TLRPC.TL_config config) {
         AndroidUtilities.runOnUIThread(() -> {
+            DownloadController.getInstance(currentAccount).loadAutoDownloadConfig(false);
             LocaleController.getInstance().loadRemoteLanguages(currentAccount);
             maxMegagroupCount = config.megagroup_size_max;
             maxGroupCount = config.chat_size_max;
@@ -830,7 +836,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         editor = emojiPreferences.edit();
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).commit();
         editor = mainPreferences.edit();
-        editor.remove("gifhint").remove("dcDomainName").remove("webFileDatacenterId").commit();
+        editor.remove("gifhint").remove("soundHint").remove("dcDomainName").remove("webFileDatacenterId").commit();
 
         reloadingWebpages.clear();
         reloadingWebpagesPending.clear();
@@ -848,8 +854,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         pollsToCheckSize = 0;
         dialogsServerOnly.clear();
         dialogsForward.clear();
-        dialogsGroupsOnly.clear();
+        dialogsCanAddUsers.clear();
         dialogsChannelsOnly.clear();
+        dialogsGroupsOnly.clear();
         dialogsUsersOnly.clear();
         dialogMessagesByIds.clear();
         dialogMessagesByRandomIds.clear();
@@ -2547,8 +2554,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 needShortPollOnlines.delete(-(int) did);
                             });
                         }
-                        dialogsGroupsOnly.remove(dialog);
+                        dialogsCanAddUsers.remove(dialog);
                         dialogsChannelsOnly.remove(dialog);
+                        dialogsGroupsOnly.remove(dialog);
                         dialogsUsersOnly.remove(dialog);
                         dialogsForward.remove(dialog);
                         dialogs_dict.remove(did);
@@ -3040,10 +3048,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         if (!reset && nextProxyInfoCheckTime > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || checkingProxyInfo) {
             return;
         }
+        if (checkingProxyInfoRequestId != 0) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingProxyInfoRequestId, true);
+            checkingProxyInfoRequestId = 0;
+        }
         SharedPreferences preferences = getGlobalMainSettings();
         boolean enabled = preferences.getBoolean("proxy_enabled", false);
         String proxyAddress = preferences.getString("proxy_ip", "");
         String proxySecret = preferences.getString("proxy_secret", "");
+        int removeCurrent = 0;
+        if (proxyDialogId != 0 && proxyDialogAddress != null && !proxyDialogAddress.equals(proxyAddress + proxySecret)) {
+            removeCurrent = 1;
+        }
         if (enabled && !TextUtils.isEmpty(proxyAddress) && !TextUtils.isEmpty(proxySecret)) {
             checkingProxyInfo = true;
             TLRPC.TL_help_getProxyData req = new TLRPC.TL_help_getProxyData();
@@ -3086,7 +3102,8 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                         }
                     }
                     proxyDialogId = did;
-                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).commit();
+                    proxyDialogAddress = proxyAddress + proxySecret;
+                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).putString("proxyDialogAddress", proxyDialogAddress).commit();
                     nextProxyInfoCheckTime = res.expires;
                     if (!noDialog) {
                         AndroidUtilities.runOnUIThread(() -> {
@@ -3217,7 +3234,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
                 if (noDialog) {
                     proxyDialogId = 0;
-                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).commit();
+                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).remove("proxyDialogAddress").commit();
                     checkingProxyInfoRequestId = 0;
                     checkingProxyInfo = false;
                     AndroidUtilities.runOnUIThread(() -> {
@@ -3237,13 +3254,19 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 }
             });
         } else {
+            removeCurrent = 2;
+        }
+        if (removeCurrent != 0) {
             proxyDialogId = 0;
-            getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).commit();
+            proxyDialogAddress = null;
+            getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).remove("proxyDialogAddress").commit();
             nextProxyInfoCheckTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime() + 60 * 60;
-            checkingProxyInfo = false;
-            if (checkingProxyInfoRequestId != 0) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingProxyInfoRequestId, true);
-                checkingProxyInfoRequestId = 0;
+            if (removeCurrent == 2) {
+                checkingProxyInfo = false;
+                if (checkingProxyInfoRequestId != 0) {
+                    ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingProxyInfoRequestId, true);
+                    checkingProxyInfoRequestId = 0;
+                }
             }
             AndroidUtilities.runOnUIThread(() -> {
                 if (proxyDialog != null) {
@@ -6502,18 +6525,18 @@ public class MessagesController implements NotificationCenter.NotificationCenter
         getChannelDifference(channelId, 0, 0, null);
     }
 
-    public static boolean isSupportId(int id) {
-        return id / 1000 == 777 || id == 333000 ||
-                id == 4240000 || id == 4240000 || id == 4244000 ||
-                id == 4245000 || id == 4246000 || id == 410000 ||
-                id == 420000 || id == 431000 || id == 431415000 ||
-                id == 434000 || id == 4243000 || id == 439000 ||
-                id == 449000 || id == 450000 || id == 452000 ||
-                id == 454000 || id == 4254000 || id == 455000 ||
-                id == 460000 || id == 470000 || id == 479000 ||
-                id == 796000 || id == 482000 || id == 490000 ||
-                id == 496000 || id == 497000 || id == 498000 ||
-                id == 4298000;
+    public static boolean isSupportUser(TLRPC.User user) {
+        return user != null && (user.support || user.id / 1000 == 777 || user.id == 333000 ||
+                user.id == 4240000 || user.id == 4240000 || user.id == 4244000 ||
+                user.id == 4245000 || user.id == 4246000 || user.id == 410000 ||
+                user.id == 420000 || user.id == 431000 || user.id == 431415000 ||
+                user.id == 434000 || user.id == 4243000 || user.id == 439000 ||
+                user.id == 449000 || user.id == 450000 || user.id == 452000 ||
+                user.id == 454000 || user.id == 4254000 || user.id == 455000 ||
+                user.id == 460000 || user.id == 470000 || user.id == 479000 ||
+                user.id == 796000 || user.id == 482000 || user.id == 490000 ||
+                user.id == 496000 || user.id == 497000 || user.id == 498000 ||
+                user.id == 4298000);
     }
 
     protected void getChannelDifference(final int channelId, final int newDialogType, final long taskId, TLRPC.InputChannel inputChannel) {
@@ -9347,8 +9370,13 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                                 }
                                 continue;
                             }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !NotificationManagerCompat.from(ApplicationLoader.applicationContext).areNotificationsEnabled()) {
+                                if (BuildVars.LOGS_ENABLED)
+                                    FileLog.d("Ignoring incoming call because notifications are disabled in system");
+                                continue;
+                            }
                             TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-                            if (svc != null || VoIPService.callIShouldHavePutIntoIntent!=null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                            if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
                                 if (BuildVars.LOGS_ENABLED) {
                                     FileLog.d("Auto-declining call " + call.id + " because there's already active one");
                                 }
@@ -9374,9 +9402,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             intent.putExtra("user_id", call.participant_id == UserConfig.getInstance(currentAccount).getClientUserId() ? call.admin_id : call.participant_id);
                             intent.putExtra("account", currentAccount);
                             try {
-                                if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                     ApplicationLoader.applicationContext.startForegroundService(intent);
-                                }else{
+                                } else {
                                     ApplicationLoader.applicationContext.startService(intent);
                                 }
                             } catch (Throwable e) {
@@ -9787,8 +9815,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
             if (dialog != null) {
                 dialogs.remove(dialog);
                 dialogsServerOnly.remove(dialog);
-                dialogsGroupsOnly.remove(dialog);
+                dialogsCanAddUsers.remove(dialog);
                 dialogsChannelsOnly.remove(dialog);
+                dialogsGroupsOnly.remove(dialog);
                 dialogsUsersOnly.remove(dialog);
                 dialogsForward.remove(dialog);
                 dialogs_dict.remove(dialog.id);
@@ -9907,8 +9936,9 @@ public class MessagesController implements NotificationCenter.NotificationCenter
 
     public void sortDialogs(SparseArray<TLRPC.Chat> chatsDict) {
         dialogsServerOnly.clear();
-        dialogsGroupsOnly.clear();
+        dialogsCanAddUsers.clear();
         dialogsChannelsOnly.clear();
+        dialogsGroupsOnly.clear();
         dialogsUsersOnly.clear();
         dialogsForward.clear();
         unreadUnmutedDialogs = 0;
@@ -9937,10 +9967,10 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                 if (DialogObject.isChannel(d)) {
                     TLRPC.Chat chat = getChat(-lower_id);
                     if (chat != null && (chat.megagroup && (chat.admin_rights != null && (chat.admin_rights.post_messages || chat.admin_rights.add_admins)) || chat.creator)) {
-                        dialogsGroupsOnly.add(d);
+                        dialogsCanAddUsers.add(d);
                     }
                     if (chat != null && chat.megagroup) {
-
+                        dialogsGroupsOnly.add(d);
                     } else {
                         dialogsChannelsOnly.add(d);
                     }
@@ -9953,6 +9983,7 @@ public class MessagesController implements NotificationCenter.NotificationCenter
                             continue;
                         }
                     }
+                    dialogsCanAddUsers.add(d);
                     dialogsGroupsOnly.add(d);
                 } else if (lower_id > 0) {
                     dialogsUsersOnly.add(d);

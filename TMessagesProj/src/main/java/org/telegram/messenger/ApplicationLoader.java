@@ -85,7 +85,12 @@ public class ApplicationLoader extends Application {
             BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    currentNetworkInfo = connectivityManager.getActiveNetworkInfo();
+                    try {
+                        currentNetworkInfo = connectivityManager.getActiveNetworkInfo();
+                    } catch (Throwable ignore) {
+
+                    }
+
                     boolean isSlow = isConnectionSlow();
                     for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                         ConnectionsManager.getInstance(a).checkConnection();
@@ -144,11 +149,24 @@ public class ApplicationLoader extends Application {
         }
     }
 
+    public ApplicationLoader() {
+        super();
+    }
+
     @Override
     public void onCreate() {
+        try {
+            applicationContext = getApplicationContext();
+        } catch (Throwable ignore) {
+
+        }
+
         super.onCreate();
 
-        applicationContext = getApplicationContext();
+        if (applicationContext == null) {
+            applicationContext = getApplicationContext();
+        }
+
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
         ConnectionsManager.native_setJava(false);
         new ForegroundDetector(this);

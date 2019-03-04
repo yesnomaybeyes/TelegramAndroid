@@ -13,6 +13,9 @@ configurations {
 dependencies {
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
+    implementation 'com.google.firebase:firebase-core:16.0.7'
+    implementation 'com.google.firebase:firebase-messaging:17.3.4'
+    implementation 'com.google.firebase:firebase-config:16.1.3'
     implementation 'com.google.android.gms:play-services-maps:16.0.0'
     implementation 'com.android.support:support-core-ui:28.0.0'
     implementation 'com.android.support:support-compat:28.0.0'
@@ -100,6 +103,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
+        debugMultidex {
+            initWith debug
+            minifyEnabled false
+			multiDexEnabled true
+			dependencies{
+                implementation 'com.android.support:multidex:1.0.3'
+            }
+            manifestPlaceholders = [applicationClassName:"MultiDexApplicationLoader"]
+        }
+
         HA {
             debuggable false
             jniDebuggable false
@@ -117,18 +130,17 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-
-        foss {
-            debuggable false
-            jniDebuggable false
-            signingConfig signingConfigs.release
-        }
     }
 
-    defaultConfig.versionCode = 14785
+    defaultConfig.versionCode = 15185
 
     sourceSets.debug {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.debugMultidex {
+        manifest.srcFile 'config/debug/AndroidManifest.xml'
+		java.srcDirs = ['src/multidex/java']
     }
 
     sourceSets.HA {
@@ -137,10 +149,6 @@ android {
 
     sourceSets.release {
         manifest.srcFile 'config/release/AndroidManifest.xml'
-    }
-
-    sourceSets.foss {
-        manifest.srcFile 'config/foss/AndroidManifest.xml'
     }
 
     flavorDimensions "minApi"
@@ -263,10 +271,17 @@ android {
         }
     }
 
+    variantFilter { variant ->
+        def names = variant.flavors*.name
+        if(variant.buildType.name!="release" && !names.contains("afat")){
+            setIgnore(true)
+        }
+    }
+
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionName "5.3.1.6";
+        versionName "5.4.0.6"
 
         //obtain your own keys at https://core.telegram.org/api/obtaining_api_id
         buildConfigField 'int', 'APP_ID', System.getenv("APP_ID")
@@ -282,5 +297,7 @@ android {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
         }
+
+        manifestPlaceholders = [applicationClassName:"ApplicationLoader"]
     }
 }
