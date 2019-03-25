@@ -32,5 +32,6 @@
     <string name="PinDialogsOrder">Порядок закреп. диалогов</string>
     <string name="PinSection">Закреплённые диалоги</string>
     <string name="ShareAlertAnonym">Анонимная кнопка Share</string>
+    <string name="RearVideoMessages">Задняя камера в видео сообщениях</string>
     
 </resources>

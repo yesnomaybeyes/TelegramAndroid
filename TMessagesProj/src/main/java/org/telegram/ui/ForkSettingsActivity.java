@@ -54,6 +54,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int photoHasStickerRow;
     private int unmutedOnTopRow;
     private int shareAnonymRow;
+    private int rearVideoMessages;
 
     private int syncPinsRow;
     private int pinOrderRow;
@@ -72,6 +73,7 @@ public class ForkSettingsActivity extends BaseFragment {
         photoHasStickerRow = rowCount++;
         unmutedOnTopRow = rowCount++;
         shareAnonymRow = rowCount++;
+        rearVideoMessages = rowCount++;
 
         emptyRow = rowCount++;
         sectionRow2 = rowCount++;
@@ -156,6 +158,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
             } else if (position == shareAnonymRow) {
                 toggleGlobalMainSetting("shareAlertAsAnonym", view, true);
+            } else if (position == rearVideoMessages) {
+                toggleGlobalMainSetting("rearVideoMessages", view, false);
             } else if (position == pinOrderRow) {
                 presentFragment(new PinsOrderActivity());
             }
@@ -221,6 +225,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == shareAnonymRow) {
                         String t = LocaleController.getString("ShareAlertAnonym", R.string.ShareAlertAnonym);
                         textCell.setTextAndCheck(t, preferences.getBoolean("shareAlertAsAnonym", true), true);
+                    } else if (position == rearVideoMessages) {
+                        String t = LocaleController.getString("RearVideoMessages", R.string.RearVideoMessages);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("rearVideoMessages", false), false);
                     }
                     break;
                 }
@@ -245,7 +252,8 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == syncPinsRow
                         || position == unmutedOnTopRow
                         || position == shareAnonymRow
-                        || position == pinOrderRow;
+                        || position == pinOrderRow
+                        || position == rearVideoMessages;
             return fork;
         }
 
@@ -292,6 +300,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == syncPinsRow
                 || position == unmutedOnTopRow
                 || position == shareAnonymRow
+                || position == rearVideoMessages
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (position == sectionRow1
