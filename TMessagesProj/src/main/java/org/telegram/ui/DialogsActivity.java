@@ -131,6 +131,8 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
 
+import org.telegram.ui.ProfileActivity;
+
 import java.util.ArrayList;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -174,6 +176,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem archiveItem;
     private ActionBarMenuSubItem clearItem;
     private ActionBarMenuSubItem readItem;
+    private ActionBarMenuSubItem profileInfoItem;
 
     private float additionalFloatingTranslation;
 
@@ -244,6 +247,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final static int clear = 103;
     private final static int mute = 104;
     private final static int archive = 105;
+    private final static int profileInfo = 110;
 
     private boolean allowScrollToHiddenView;
     private boolean scrollingManually;
@@ -926,7 +930,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     DialogsActivity dialogsActivity = new DialogsActivity(arguments);
                     dialogsActivity.setDelegate(oldDelegate);
                     launchActivity.presentFragment(dialogsActivity, false, true);
-                } else if (id == pin || id == read || id == delete || id == clear || id == mute || id == archive) {
+                } else if (id == pin || id == read || id == delete || id == clear || id == mute || id == archive || id == profileInfo) {
                     perfromSelectedDialogsAction(id, true);
                 }
             }
@@ -954,6 +958,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         archiveItem = otherItem.addSubItem(archive, R.drawable.msg_archive, LocaleController.getString("Archive", R.string.Archive));
         readItem = otherItem.addSubItem(read, R.drawable.msg_markread, LocaleController.getString("MarkAsRead", R.string.MarkAsRead));
         clearItem = otherItem.addSubItem(clear, R.drawable.msg_clear, LocaleController.getString("ClearHistory", R.string.ClearHistory));
+        profileInfoItem = otherItem.addSubItem(profileInfo, R.drawable.msg_message, LocaleController.getString("Info", R.string.Info));
 
         actionModeViews.add(pinItem);
         actionModeViews.add(muteItem);
@@ -2372,6 +2377,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         getNotificationsController().setDialogNotificationsSettings(selectedDialog, NotificationsController.SETTING_MUTE_FOREVER);
                     }
                 }
+            } else if (action == profileInfo) {
+                Bundle args = new Bundle();
+                final boolean isChat = (chat != null);
+                args.putInt(isChat ? "chat_id" : "user_id", isChat ? chat.id : user.id);
+                presentFragment(new ProfileActivity(args));
             }
         }
         if (action == pin) {
@@ -2524,6 +2534,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             pinItem.setIcon(R.drawable.msg_unpin);
             pinItem.setContentDescription(LocaleController.getString("UnpinFromTop", R.string.UnpinFromTop));
         }
+        profileInfoItem.setVisibility(count > 1 ? View.GONE : View.VISIBLE);
     }
 
     private boolean validateSlowModeDialog(long dialogId) {
