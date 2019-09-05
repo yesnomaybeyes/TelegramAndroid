@@ -32,5 +32,6 @@
     <string name="PinDialogsOrder">Порядок закреп. диалогов</string>
     <string name="RearVideoMessages">Задняя камера в видео сообщениях</string>
     <string name="ReplaceForward">Использовать быструю пересылку</string>
+    <string name="HideSensitiveData">Скрыть личную информацию</string>
     
 </resources>

@@ -218,10 +218,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         rowCount = 0;
         overscrollRow = rowCount++;
-        numberSectionRow = -1;
-        numberRow = -1;
-        usernameRow = -1;
-        bioRow = -1;
+        if (SharedConfig.hideSensitiveData()) {
+            numberSectionRow = -1;
+            numberRow = -1;
+            usernameRow = -1;
+            bioRow = -1;
+        } else {
+            numberSectionRow = rowCount++;
+            numberRow = rowCount++;
+            usernameRow = rowCount++;
+            bioRow = rowCount++;
+        }
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
         notificationRow = rowCount++;
