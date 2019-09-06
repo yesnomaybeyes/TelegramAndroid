@@ -33,5 +33,7 @@
     <string name="RearVideoMessages">Задняя камера в видео сообщениях</string>
     <string name="ReplaceForward">Использовать быструю пересылку</string>
     <string name="HideSensitiveData">Скрыть личную информацию</string>
-    
+    <string name="SystemCamera">Использовать системную камеру</string>
+    <string name="SystemCameraInfo">Только в диалоге вложений</string>
+
 </resources>
