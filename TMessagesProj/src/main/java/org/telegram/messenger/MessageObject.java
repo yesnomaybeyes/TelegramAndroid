@@ -4856,7 +4856,7 @@ public class MessageObject {
         if (message.id < 0) {
             return true;
         }
-        if (chat == null && message.to_id.channel_id != 0) {
+        if (chat == null && message != null && message.to_id != null && message.to_id.channel_id != 0) {
             chat = MessagesController.getInstance(currentAccount).getChat(message.to_id.channel_id);
         }
         if (ChatObject.isChannel(chat)) {

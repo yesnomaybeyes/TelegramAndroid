@@ -468,8 +468,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     if (idx >= 0) {
                         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(idx + proxyStartRow);
                         if (holder != null) {
-                            TextDetailProxyCell cell = (TextDetailProxyCell) holder.itemView;
-                            cell.updateStatus();
+                            if (holder.itemView != null) {
+                                TextDetailProxyCell cell = (TextDetailProxyCell) holder.itemView;
+                                cell.updateStatus();
+                            }
                         }
                     }
                 }
