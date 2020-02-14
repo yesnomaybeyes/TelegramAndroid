@@ -114,6 +114,7 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.UserCell;
@@ -255,6 +256,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int statistics = 19;
     private final static int start_secret_chat = 20;
     private final static int gallery_menu_save = 21;
+    private final static int show_video_only = 100;
+
+    private int skipPhotosRow;
+    private final int skipPhotosRowConst = 77;
+    private boolean skipPhotos = false;
 
     private Rect rect = new Rect();
 
@@ -1743,6 +1749,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new IdenticonActivity(args));
             } else if (position == settingsTimerRow) {
                 showDialog(AlertsCreator.createTTLAlert(getParentActivity(), currentEncryptedChat).create());
+            } else if (position == skipPhotosRow) {
+                skipPhotos = !skipPhotos;
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(skipPhotos);
+                }
+                sharedMediaLayout.reloadFirstTab(skipPhotos);
             } else if (position == notificationsRow) {
                 if (LocaleController.isRTL && x <= AndroidUtilities.dp(76) || !LocaleController.isRTL && x >= view.getMeasuredWidth() - AndroidUtilities.dp(76)) {
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) view;
@@ -3754,6 +3766,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         int prevRowsCount = rowCount;
         rowCount = 0;
 
+        skipPhotosRow = -1;
+
         sendMessageRow = -1;
         reportRow = -1;
         emptyRow = -1;
@@ -3841,6 +3855,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
+            if (hasMedia) {
+                skipPhotosRow = rowCount++;
+            }
             if (hasMedia || userInfo != null && userInfo.common_chats_count != 0) {
                 sharedMediaRow = rowCount++;
             } else if (lastSectionRow == -1 && needSendMessage) {
@@ -3941,6 +3958,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             if (hasMedia) {
+                if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                    skipPhotosRow = rowCount++;
+                }
                 sharedMediaRow = rowCount++;
             }
         }
@@ -4512,6 +4532,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view = sharedMediaLayout;
                     break;
                 }
+                case skipPhotosRowConst: {
+                    view = new TextCheckCell(mContext);
+                    skipPhotos = false;
+                    ((TextCheckCell) view).setChecked(skipPhotos);
+                    sharedMediaLayout.reloadFirstTab(skipPhotos);
+                    break;
+                }
             }
             if (viewType != 13) {
                 view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -4659,6 +4686,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setColors(null, Theme.key_windowBackgroundWhiteRedText5);
                     }
                     break;
+                case skipPhotosRowConst:
+                    TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                    if (position == skipPhotosRow) {
+                        String t = LocaleController.getString("AllVideos", R.string.AllVideos);
+                        textCheckCell.setTextAndCheck(t, skipPhotos, false);
+                    }
+                    break;
                 case 6:
                     NotificationsCheckCell checkCell = (NotificationsCheckCell) holder.itemView;
                     if (position == notificationsRow) {
@@ -4800,6 +4834,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 4;
             } else if (i == notificationsDividerRow) {
                 return 5;
+            } else if (i == skipPhotosRow) {
+                return skipPhotosRowConst;
             } else if (i == notificationsRow) {
                 return 6;
             } else if (i == infoSectionRow || i == lastSectionRow || i == membersSectionRow || i == settingsSectionRow) {
