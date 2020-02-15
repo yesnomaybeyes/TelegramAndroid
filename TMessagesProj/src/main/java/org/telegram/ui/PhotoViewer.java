@@ -8845,8 +8845,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return false;
     }
 
+    private boolean isFlipPhotosDisabled() {
+        return MessagesController
+            .getGlobalMainSettings()
+            .getBoolean("disableFlipPhotos", false);
+    }
+
     @Override
     public boolean canDoubleTap(MotionEvent e) {
+        final boolean disableFlip = isFlipPhotosDisabled();
+        if (disableFlip && checkImageView.getVisibility() != View.VISIBLE) {
+            return true;
+        }
         if (checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
             float x = e.getX();
             int side = containerView.getMeasuredWidth() / 6;
@@ -8906,7 +8916,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return false;
         }
         float x = e.getX();
-        if (checkImageView.getVisibility() != View.VISIBLE) {
+        if (!isFlipPhotosDisabled() && checkImageView.getVisibility() != View.VISIBLE) {
             int side = containerView.getMeasuredWidth() / 6;
             if (x < side) {
                 if (leftImage.hasImageSet()) {
