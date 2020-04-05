@@ -266,6 +266,10 @@ public class DialogCell extends BaseCell {
 
     private void checkOnline() {
         boolean isOnline = user != null && !user.self && (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id));
+        if (!isOnline && user != null && !user.self && user.status != null) {
+            int diff = user.status.expires - ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            isOnline = diff > -60 * 60;
+        }
         onlineProgress = isOnline ? 1.0f : 0.0f;
     }
 
@@ -2069,6 +2073,22 @@ public class DialogCell extends BaseCell {
 
         if (user != null && isDialogCell && currentDialogFolderId == 0 && !MessagesController.isSupportUser(user) && !user.bot) {
             boolean isOnline = !user.self && (user.status != null && user.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id));
+            int colorOnline = 0;
+            if (!user.self && user.status != null) {
+                int diff = user.status.expires - ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+                colorOnline = diff > 0
+                    ? Theme.getColor(Theme.key_chats_onlineCircle)
+                    : diff > -15 * 60
+                    ? android.graphics.Color.argb(255, 234, 234, 30)
+                    : diff > -30 * 60
+                    ? android.graphics.Color.argb(255, 234, 132, 30)
+                    : diff > -60 * 60
+                    ? android.graphics.Color.argb(255, 234, 30, 30)
+                    : 0;
+                if (colorOnline != 0) {
+                    isOnline = true;
+                }
+            }
             if (isOnline || onlineProgress != 0) {
                 int top = avatarImage.getImageY2() - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8);
                 int left;
@@ -2080,7 +2100,7 @@ public class DialogCell extends BaseCell {
 
                 Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                 canvas.drawCircle(left, top, AndroidUtilities.dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
-                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
+                Theme.dialogs_onlineCirclePaint.setColor(colorOnline);
                 canvas.drawCircle(left, top, AndroidUtilities.dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
                 if (isOnline) {
                     if (onlineProgress < 1.0f) {
