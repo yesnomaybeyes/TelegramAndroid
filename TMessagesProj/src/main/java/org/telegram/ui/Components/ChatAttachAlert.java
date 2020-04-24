@@ -292,7 +292,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private ChatAttachAlertContactsLayout contactsLayout;
     private ChatAttachAlertAudioLayout audioLayout;
     private ChatAttachAlertPollLayout pollLayout;
-    private ChatAttachAlertLocationLayout locationLayout;
+    private ChatAttachAlertPollLayout locationLayout;
     private ChatAttachAlertDocumentLayout documentLayout;
     private AttachAlertLayout[] layouts = new AttachAlertLayout[6];
     private AttachAlertLayout currentAttachLayout;
@@ -1078,8 +1078,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         return;
                     }
                     if (locationLayout == null) {
-                        layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext());
-                        locationLayout.setDelegate((location, live, notify, scheduleDate) -> ((ChatActivity) baseFragment).didSelectLocation(location, live, notify, scheduleDate));
+                        // layouts[5] = locationLayout = new ChatAttachAlertLocationLayout(this, getContext());
+                        // locationLayout.setDelegate((location, live, notify, scheduleDate) -> ((ChatActivity) baseFragment).didSelectLocation(location, live, notify, scheduleDate));
                     }
                     showLayout(locationLayout);
                 } else if (num == 9) {
