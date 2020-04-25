@@ -733,6 +733,39 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         onlineTextView.setGravity(Gravity.LEFT);
         frameLayout.addView(onlineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, 0, 96, 0));
 
+        View.OnLongClickListener longClickUserInfo = new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle("User info menu");
+                String[] items = {
+                    "Change phone number",
+                    "Change username",
+                    "Change bio",
+                };
+                builder.setItems(items, (d, which) -> {
+                    if (which == 0) {
+                        presentFragment(new ChangePhoneActivity());
+                    } else if (which == 1) {
+                        presentFragment(new ChangeUsernameActivity());
+                    } else if (which == 2) {
+                        presentFragment(new ChangeBioActivity());
+                    }
+                });
+                builder.setNegativeButton(
+                    LocaleController.getString("Cancel", R.string.Cancel),
+                    null);
+                showDialog(builder.create());
+
+                return true;
+            }
+        };
+
+        nameTextView.setOnLongClickListener(longClickUserInfo);
+        onlineTextView.setOnLongClickListener(longClickUserInfo);
+        avatarContainer.setOnLongClickListener(longClickUserInfo);
+        
         writeButton = new ImageView(context);
         Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_profile_actionBackground), Theme.getColor(Theme.key_profile_actionPressedBackground));
         if (Build.VERSION.SDK_INT < 21) {
