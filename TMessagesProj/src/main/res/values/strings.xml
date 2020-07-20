@@ -3508,6 +3508,8 @@
     <string name="AddToHideMode">Add to Hide Mode</string>
     <string name="PinOrderInfo">You can manage local order of pinned dialogs right here.</string>
     <string name="GoToFirstMessage">Go to Beginning</string>
+    <string name="formatterDay24HSec">HH:mm:ss</string>
+    <string name="formatterDay12HSec">h:mm:ss a</string>
     <!--fork settings view-->
     <string name="ForkSettingsTitle">Fork Client Settings</string>
     <string name="SquareAvatars">Square Avatars</string>
@@ -3531,5 +3533,6 @@
     <string name="OpenArchiveOnPull">Open Archive on pulldown</string>
     <string name="StickerSize">Sticker Size</string>
     <string name="DisableFlipPhotos">Disable Flip Photos by tapping</string>
+    <string name="FormatWithSeconds">Format message time with seconds</string>
     <string name="ForkCheckUpdate">Check updates</string>
 </resources>
