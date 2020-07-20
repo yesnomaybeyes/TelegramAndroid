@@ -848,6 +848,9 @@ public class DialogCell extends BaseCell {
                             }
                             currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                         } else {
+                            final boolean disableThumbs = MessagesController
+                                .getGlobalMainSettings()
+                                .getBoolean("disableThumbsInDialogList", false);
                             boolean needEmoji = true;
                             if (BuildVars.DEBUG_VERSION && encryptedChat == null && !message.needDrawBluredPreview() && (message.isPhoto() || message.isNewGif() || message.isVideo())) {
                                 TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 40);
@@ -958,9 +961,11 @@ public class DialogCell extends BaseCell {
                                         messageString = new SpannableStringBuilder(messageString);
                                     }
                                     checkMessage = false;
+                                    if (!disableThumbs) {
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     builder.insert(thumbInsertIndex, " ");
                                     builder.setSpan(new FixedWidthSize(AndroidUtilities.dp(thumbSize + 6)), thumbInsertIndex, thumbInsertIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    }
                                 }
                             } else {
                                 if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
@@ -1007,10 +1012,12 @@ public class DialogCell extends BaseCell {
                                         messageString = new SpannableStringBuilder(messageString);
                                     }
                                     checkMessage = false;
+                                    if (!disableThumbs) {
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     builder.insert(0, " ");
                                     builder.setSpan(new FixedWidthSize(AndroidUtilities.dp(thumbSize + 6)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     Emoji.replaceEmoji(builder, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt(), AndroidUtilities.dp(17), false);
+                                    }
                                 }
                             }
                         }
@@ -2188,7 +2195,10 @@ public class DialogCell extends BaseCell {
             avatarImage.draw(canvas);
         }
 
-        if (hasMessageThumb) {
+        if (hasMessageThumb
+            && !MessagesController
+                .getGlobalMainSettings()
+                .getBoolean("disableThumbsInDialogList", false)) {
             thumbImage.draw(canvas);
         }
 
