@@ -3535,4 +3535,5 @@
     <string name="DisableFlipPhotos">Disable Flip Photos by tapping</string>
     <string name="FormatWithSeconds">Format message time with seconds</string>
     <string name="ForkCheckUpdate">Check updates</string>
+    <string name="DisableThumbsInDialogList">Disable thumbs in dialog list</string>
 </resources>
