@@ -41,7 +41,7 @@ jobs:
         run: |
           echo $ADDITIONAL_BUILD_NUMBER
           sudo apt update
-          echo "$KEYSTORE" > TMessagesProj/config/release.keystore
+          echo "$KEYSTORE" | base64 -d > TMessagesProj/config/release.keystore
           sudo apt install openjdk-8-jdk openjdk-11-jre
           ./gradlew assembleAfatDebug
 
